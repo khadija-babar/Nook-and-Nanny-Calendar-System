@@ -244,7 +244,6 @@ function renderCalendar() {
   }
   setSeasonClass(current.getMonth());
 }
-
 // Options menu
 function promptMenu(key,mName,d) {
   if (currentUser.role !== "manager") {
@@ -259,14 +258,15 @@ function promptMenu(key,mName,d) {
     taskInput.placeholder = `Task for ${monthNames[mName]} ${d}`;
     taskInput.value = '';
     taskMessage.textContent = '';
+    taskInput.focus(); // Added focus to make it clearer
   } else if (opt==='2') {
     tasks = tasks.filter(t=>t.date!==key);
     saveAll();
+    renderCalendar();
   } else if (opt==='3') {
     openLog(key);
   }
 }
-
 // Open daily-log overlay
 function openLog(key) {
   if (!logs[key] && currentUser.role !== "manager") {
