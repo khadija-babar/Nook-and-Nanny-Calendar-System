@@ -173,22 +173,33 @@ function updateUIForUserRole() {
     managerSection.style.display = 'block';
   }
 }
+let currentSeason = null;
 
-// Apply season video
 function setSeasonClass(m) {
-  document.body.classList.remove('winter','spring','summer','autumn');
   const seasons = {
-    winter: [11,0,1], spring: [2,3,4],
-    summer: [5,6,7], autumn: [8,9,10]
+    winter: [11, 0, 1],
+    spring: [2, 3, 4],
+    summer: [5, 6, 7],
+    autumn: [8, 9, 10]
   };
+
+  let newSeason = null;
   for (let s in seasons) {
     if (seasons[s].includes(m)) {
-      document.body.classList.add(s);
-      bgVideo.src = s+".mp4";
+      newSeason = s;
+      break;
     }
   }
-  bgVideo.load();
+
+  if (newSeason && newSeason !== currentSeason) {
+    currentSeason = newSeason;
+    document.body.classList.remove('winter', 'spring', 'summer', 'autumn');
+    document.body.classList.add(newSeason);
+    bgVideo.src = newSeason + ".mp4";
+    bgVideo.load();
+  }
 }
+
 
 // Build calendar
 function renderCalendar() {
