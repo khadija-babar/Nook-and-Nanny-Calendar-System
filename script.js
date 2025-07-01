@@ -225,19 +225,21 @@ function renderCalendar() {
     const T = tasks.find(t=>t.date===key);
     if (T) cell.classList.add('marked');
 
-    cell.onclick = ()=> {
-      if (T) {
-        // show existing task
-        taskMessage.textContent = `📝 ${T.text}`;
-        if (currentUser.role === "manager") {
-          taskInput.style.display = addTaskBtn.style.display = deleteTaskBtn.style.display = 'inline';
-          taskInput.dataset.date = key;
-          taskInput.value = T.text;
-        }
-      } else {
-        promptMenu(key,m,d);
-      }
-    };
+  cell.onclick = () => {
+  if (T) {
+    // show existing task
+    taskMessage.textContent = `📝 ${T.text}`;
+    if (currentUser.role === "manager") {
+      taskInput.style.display = addTaskBtn.style.display = deleteTaskBtn.style.display = 'inline';
+      taskInput.dataset.date = key;
+      taskInput.value = T.text;
+    }
+  }
+  
+  // Always show the "Daily Report" option
+  promptMenu(key, m, d);
+};
+
     daysEl.appendChild(cell);
   }
   setSeasonClass(current.getMonth());
