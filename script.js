@@ -173,37 +173,24 @@ function updateUIForUserRole() {
     managerSection.style.display = 'block';
   }
 }
-let currentSeason = null;
 
+// Apply season video
 function setSeasonClass(m) {
+  document.body.classList.remove('winter','spring','summer','autumn');
   const seasons = {
-    winter: [11, 0, 1],
-    spring: [2, 3, 4],
-    summer: [5, 6, 7],
-    autumn: [8, 9, 10]
+    winter: [11,0,1], spring: [2,3,4],
+    summer: [5,6,7], autumn: [8,9,10]
   };
-
-  let newSeason = null;
   for (let s in seasons) {
     if (seasons[s].includes(m)) {
-      newSeason = s;
-      break;
+      document.body.classList.add(s);
+      bgVideo.src = s+".mp4";
     }
   }
-
-  if (newSeason && newSeason !== currentSeason) {
-    currentSeason = newSeason;
-    document.body.classList.remove('winter', 'spring', 'summer', 'autumn');
-    document.body.classList.add(newSeason);
-    bgVideo.src = newSeason + ".mp4";
-    bgVideo.load();
-  }
+  bgVideo.load();
 }
-
-
-// Build calendar
 function renderCalendar() {
-  if (!currentUser) return; // Don't render until logged in
+  if (!currentUser) return;
   
   const y = current.getFullYear(), m = current.getMonth();
   monthYearEl.textContent = `${monthNames[m]} ${y}`;
@@ -222,29 +209,31 @@ function renderCalendar() {
     if (today.getFullYear()===y && today.getMonth()===m && today.getDate()===d) {
       cell.classList.add('today');
     }
-    const T = tasks.find(t=>t.date===key);
+    
+    // Find tasks for this date that are either assigned to this user or to "all"
+    const T = tasks.find(t => t.date === key && 
+                          (t.assignedTo === currentUser.role || t.assignedTo === "all"));
+    
     if (T) cell.classList.add('marked');
 
-  cell.onclick = () => {
-  if (T) {
-    // show existing task
-    taskMessage.textContent = `📝 ${T.text}`;
-    if (currentUser.role === "manager") {
-      taskInput.style.display = addTaskBtn.style.display = deleteTaskBtn.style.display = 'inline';
-      taskInput.dataset.date = key;
-      taskInput.value = T.text;
-    }
-  }
-  
-  // Always show the "Daily Report" option
-  promptMenu(key, m, d);
-};
-
+    cell.onclick = ()=> {
+      if (T) {
+        // show existing task
+        taskMessage.textContent = `📝 ${T.text}`;
+        if (currentUser.role === "manager") {
+          taskInput.style.display = addTaskBtn.style.display = deleteTaskBtn.style.display = 'inline';
+          taskInput.dataset.date = key;
+          taskInput.value = T.text;
+          document.getElementById('taskAssignee').value = T.assignedTo; // Show current assignee
+        }
+      } else {
+        promptMenu(key,m,d);
+      }
+    };
     daysEl.appendChild(cell);
   }
   setSeasonClass(current.getMonth());
 }
-// Options menu
 function promptMenu(key,mName,d) {
   if (currentUser.role !== "manager") {
     taskMessage.textContent = "Only managers can add/edit content";
@@ -252,18 +241,20 @@ function promptMenu(key,mName,d) {
   }
   
   const opt = prompt("1 Add Task\n2 Delete Task\n3 Daily Report");
-  if (opt==='1') {
+  if(opt==='1') {
     taskInput.style.display = addTaskBtn.style.display = 'inline';
+    document.getElementById('taskAssignee').style.display = 'inline'; // Show assignee dropdown
     taskInput.dataset.date = key;
     taskInput.placeholder = `Task for ${monthNames[mName]} ${d}`;
     taskInput.value = '';
     taskMessage.textContent = '';
-    taskInput.focus(); // Added focus to make it clearer
-  } else if (opt==='2') {
-    tasks = tasks.filter(t=>t.date!==key);
-    saveAll();
-    renderCalendar();
-  } else if (opt==='3') {
+  } else if(opt==='2') {
+    const assignee = prompt("Enter the role this task was assigned to (or 'all')");
+    if (assignee) {
+      tasks = tasks.filter(t => t.date !== key || t.assignedTo !== assignee);
+      saveAll();
+    }
+  } else if(opt==='3') {
     openLog(key);
   }
 }
@@ -796,35 +787,40 @@ function saveAll() {
   localStorage.setItem('logs', JSON.stringify(logs));
   renderCalendar();
 }
-
-// Task buttons
 addTaskBtn.onclick = () => {
   if (currentUser.role !== "manager") return;
   
-  const txt = taskInput.value.trim(), dt = taskInput.dataset.date;
+  const txt = taskInput.value.trim(), 
+        dt = taskInput.dataset.date,
+        assignee = document.getElementById('taskAssignee').value; // Get selected assignee
+  
   if(!txt || !dt) return;
-  const ix = tasks.findIndex(t => t.date === dt);
+  const ix = tasks.findIndex(t => t.date === dt && t.assignedTo === assignee);
   if(ix >= 0) tasks[ix].text = txt;
-  else tasks.push({date: dt, text: txt});
+  else tasks.push({
+    date: dt, 
+    text: txt, 
+    assignedTo: assignee // Store who the task is assigned to
+  });
+  
   taskInput.value = '';
   taskInput.dataset.date = '';
   taskInput.style.display = addTaskBtn.style.display = deleteTaskBtn.style.display = 'none';
   taskMessage.textContent = '';
   saveAll();
 };
-
 deleteTaskBtn.onclick = () => {
   if (currentUser.role !== "manager") return;
   
   const dt = taskInput.dataset.date;
-  tasks = tasks.filter(t => t.date !== dt);
+  const assignee = document.getElementById('taskAssignee').value;
+  tasks = tasks.filter(t => t.date !== dt || t.assignedTo !== assignee);
   taskInput.value = '';
   taskInput.dataset.date = '';
   taskInput.style.display = addTaskBtn.style.display = deleteTaskBtn.style.display = 'none';
   taskMessage.textContent = '';
   saveAll();
 };
-
 // Edit button functionality
 editLogBtn.onclick = () => {
   if (currentUser.role !== "manager") return;
